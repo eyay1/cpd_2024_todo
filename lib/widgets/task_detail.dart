@@ -12,12 +12,12 @@ class TaskDetail extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text(task.title),
-        backgroundColor: seedColor, // Verwenden Sie die angegebene Farbe hier
+        backgroundColor: seedColor,
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Card(
-          color: Colors.white, // Setzen Sie die Kartenfarbe auf Weiß
+          color: Colors.white,
           elevation: 4.0,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(10.0),

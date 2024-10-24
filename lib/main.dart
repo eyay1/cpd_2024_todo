@@ -1,13 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'providers/task_provider.dart';
+//import 'storage/task_storage_shared_preferences.dart';
+import 'storage/task_storage_sqlite.dart';
+//import 'storage/task_storage_postgres.dart';
 import 'widgets/task_form.dart';
 import 'widgets/task_detail.dart';
 
 void main() {
+  //TaskStoragePostgres storage = TaskStoragePostgres();
+  TaskStorageSQLite storage = TaskStorageSQLite();
+  //TaskStorageSharedPreferences storage = TaskStorageSharedPreferences();
+
   runApp(
     ChangeNotifierProvider(
-      create: (context) => TaskProvider()..loadTasks(),
+      create: (context) => TaskProvider(storage)..loadTasks(),
       child: const MyApp(),
     ),
   );

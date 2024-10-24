@@ -1,58 +1,62 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import '../storage/task_storage.dart';
 import '../models/tasks.dart';
-import 'dart:convert';
 
 class TaskProvider with ChangeNotifier {
+  final TaskStorage storage;
   List<Task> _tasks = [];
+
+  TaskProvider(this.storage);
 
   List<Task> get tasks => _tasks;
 
-  void addTask(Task task) {
-    _tasks.add(task);
-    saveTasks();
+  Future<void> loadTasks() async {
+    _tasks = await storage.getAllTasks();
     notifyListeners();
   }
 
-  void removeTask(int index) {
-    _tasks.removeAt(index);
-    saveTasks();
+  Future<void> addTask(Task task) async {
+    await storage.createTask(task);
+    tasks.add(task);
     notifyListeners();
+  }
+
+  Future<void> removeTask(int index) async {
+    final taskId = tasks[index].id;
+    if (taskId != null) {
+      await storage.deleteTask(taskId);
+    }
+    tasks.removeAt(index);
+    notifyListeners();
+  }
+
+  Future<void> updateTask(Task updatedTask) async {
+    await storage.updateTask(updatedTask);
+    final index = tasks.indexWhere((task) => task.id == updatedTask.id);
+    if (index != -1) {
+      tasks[index] = updatedTask;
+      notifyListeners();
+    }
   }
 
   void toggleTaskStatus(int index) {
-    _tasks[index].isCompleted = !_tasks[index].isCompleted;
-    saveTasks();
-    notifyListeners();
-  }
-
-  void loadTasks() async {
-    final prefs = await SharedPreferences.getInstance();
-    final tasksString = prefs.getString('tasks') ?? '[]';
-    final tasksJson = json.decode(tasksString) as List;
-    _tasks = tasksJson.map((taskJson) => Task.fromJson(taskJson)).toList();
-    notifyListeners();
-  }
-
-  void saveTasks() async {
-    final prefs = await SharedPreferences.getInstance();
-    final tasksString =
-        json.encode(_tasks.map((task) => task.toJson()).toList());
-    prefs.setString('tasks', tasksString);
+    final task = tasks[index];
+    task.isCompleted = !task.isCompleted;
+    updateTask(task);
   }
 
   void sortTasksByPriority() {
-    _tasks.sort((a, b) => a.priority.compareTo(b.priority));
+    tasks.sort((a, b) => b.priority.compareTo(a.priority));
     notifyListeners();
   }
 
   void sortTasksByDeadline() {
-    _tasks.sort((a, b) => a.deadline.compareTo(b.deadline));
+    tasks.sort((a, b) => a.deadline.compareTo(b.deadline));
     notifyListeners();
   }
 
   void sortTasksByStatus() {
-    _tasks.sort((a, b) => a.isCompleted ? 1 : 0 - (b.isCompleted ? 1 : 0));
+    tasks.sort((a, b) => a.isCompleted ? 1 : -1);
     notifyListeners();
   }
 }
