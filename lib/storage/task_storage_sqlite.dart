@@ -27,7 +27,7 @@ class TaskStorageSQLite implements TaskStorage {
       // Tabelle erstellen, falls sie noch nicht existiert
       _db.execute('''
         CREATE TABLE IF NOT EXISTS tasks (
-          id INTEGER PRIMARY KEY,
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
           title TEXT,
           description TEXT,
           deadline TEXT,
@@ -36,23 +36,19 @@ class TaskStorageSQLite implements TaskStorage {
         )
       ''');
       print('Datenbank und Tabelle erfolgreich initialisiert.');
-      _dbLock.complete();
+      _dbLock
+          .complete(); // Signalisiert, dass die Initialisierung abgeschlossen ist
     } catch (e) {
       print('Fehler bei der Initialisierung der Datenbank: $e');
+      if (!_dbLock.isCompleted)
+        _dbLock.completeError(e); // Setzt den Fehlerfall im Completer
     }
   }
 
   // Generische Methode zur Ausführung von DB-Operationen
   Future<T> _executeDbOperation<T>(Future<T> Function() operation) async {
-    await _dbLock.future;
+    await _dbLock.future; // Wartet, bis die Datenbank initialisiert ist
     return operation();
-  }
-
-  // Methode zur Bestimmung der nächsten ID
-  Future<int> _getNextId() async {
-    final result = _db.select('SELECT MAX(id) as maxId FROM tasks');
-    final maxId = result.isNotEmpty ? result.first['maxId'] as int? : null;
-    return (maxId ?? 0) + 1;
   }
 
   // Aufgabe erstellen
@@ -60,20 +56,18 @@ class TaskStorageSQLite implements TaskStorage {
   Future<void> createTask(Task task) async {
     await _executeDbOperation(() async {
       try {
-        // Bestimme die nächste verfügbare ID
-        final nextId = await _getNextId();
+        // Führe das INSERT ohne ID durch, um AUTOINCREMENT zu verwenden
         _db.execute('''
-          INSERT INTO tasks (id, title, description, deadline, priority, isCompleted)
-          VALUES (?, ?, ?, ?, ?, ?)
+          INSERT INTO tasks (title, description, deadline, priority, isCompleted)
+          VALUES (?, ?, ?, ?, ?)
         ''', [
-          nextId,
           task.title,
           task.description,
           task.deadline.toIso8601String(),
           task.priority,
           task.isCompleted ? 1 : 0
         ]);
-        print('Aufgabe erfolgreich hinzugefügt mit ID: $nextId');
+        print('Aufgabe erfolgreich hinzugefügt.');
       } catch (e) {
         print('Fehler beim Hinzufügen der Aufgabe: $e');
       }

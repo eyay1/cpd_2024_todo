@@ -82,7 +82,7 @@ class MyHomePage extends StatelessWidget {
                 shrinkWrap: true,
                 itemBuilder: (context, index) {
                   final task = taskProvider.tasks[index];
-                  print("Tasks: ${task.title}");
+                  print("Tasks: ID: ${task.id} , Titel: ${task.title}");
                   return Dismissible(
                     key: Key(task.title),
                     direction: DismissDirection.endToStart,
