@@ -1,6 +1,6 @@
 import 'package:sqlite3/sqlite3.dart';
 import 'package:path/path.dart' as path;
-import 'package:path_provider/path_provider.dart'; // Wichtig für Flutter
+import 'package:path_provider/path_provider.dart';
 import 'task_storage.dart';
 import '../models/tasks.dart';
 import 'dart:async';
@@ -27,7 +27,7 @@ class TaskStorageSQLite implements TaskStorage {
       // Tabelle erstellen, falls sie noch nicht existiert
       _db.execute('''
         CREATE TABLE IF NOT EXISTS tasks (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          id INTEGER PRIMARY KEY,
           title TEXT,
           description TEXT,
           deadline TEXT,
@@ -48,22 +48,32 @@ class TaskStorageSQLite implements TaskStorage {
     return operation();
   }
 
+  // Methode zur Bestimmung der nächsten ID
+  Future<int> _getNextId() async {
+    final result = _db.select('SELECT MAX(id) as maxId FROM tasks');
+    final maxId = result.isNotEmpty ? result.first['maxId'] as int? : null;
+    return (maxId ?? 0) + 1;
+  }
+
   // Aufgabe erstellen
   @override
   Future<void> createTask(Task task) async {
     await _executeDbOperation(() async {
       try {
+        // Bestimme die nächste verfügbare ID
+        final nextId = await _getNextId();
         _db.execute('''
-          INSERT INTO tasks (title, description, deadline, priority, isCompleted)
-          VALUES (?, ?, ?, ?, ?)
+          INSERT INTO tasks (id, title, description, deadline, priority, isCompleted)
+          VALUES (?, ?, ?, ?, ?, ?)
         ''', [
+          nextId,
           task.title,
           task.description,
           task.deadline.toIso8601String(),
           task.priority,
           task.isCompleted ? 1 : 0
         ]);
-        print('Aufgabe erfolgreich hinzugefügt.');
+        print('Aufgabe erfolgreich hinzugefügt mit ID: $nextId');
       } catch (e) {
         print('Fehler beim Hinzufügen der Aufgabe: $e');
       }

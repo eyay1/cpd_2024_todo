@@ -8,6 +8,8 @@ import 'widgets/task_form.dart';
 import 'widgets/task_detail.dart';
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+
   //TaskStoragePostgres storage = TaskStoragePostgres();
   TaskStorageSQLite storage = TaskStorageSQLite();
   //TaskStorageSharedPreferences storage = TaskStorageSharedPreferences();
@@ -77,8 +79,10 @@ class MyHomePage extends StatelessWidget {
             Expanded(
               child: ListView.builder(
                 itemCount: taskProvider.tasks.length,
+                shrinkWrap: true,
                 itemBuilder: (context, index) {
                   final task = taskProvider.tasks[index];
+                  print("Tasks: ${task.title}");
                   return Dismissible(
                     key: Key(task.title),
                     direction: DismissDirection.endToStart,
