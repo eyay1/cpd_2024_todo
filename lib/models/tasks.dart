@@ -1,5 +1,7 @@
+import 'package:uuid/uuid.dart';
+
 class Task {
-  int? id;
+  String? id;
   String title;
   String description;
   DateTime deadline;
@@ -7,13 +9,13 @@ class Task {
   bool isCompleted;
 
   Task({
-    this.id,
+    String? id,
     required this.title,
     required this.description,
     required this.deadline,
     required this.priority,
     this.isCompleted = false,
-  });
+  }) : id = id ?? const Uuid().v4();
 
   Map<String, dynamic> toJson() {
     return {

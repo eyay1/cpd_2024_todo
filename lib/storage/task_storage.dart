@@ -4,5 +4,5 @@ abstract class TaskStorage {
   Future<void> createTask(Task task);
   Future<List<Task>> getAllTasks();
   Future<void> updateTask(Task task);
-  Future<void> deleteTask(int taskId);
+  Future<void> deleteTask(String taskId);
 }

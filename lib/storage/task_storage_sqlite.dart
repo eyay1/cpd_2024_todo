@@ -9,25 +9,18 @@ class TaskStorageSQLite implements TaskStorage {
   late Database _db;
   final _dbLock = Completer<void>();
 
-  // Konstruktor, der die Datenbank asynchron initialisiert
   TaskStorageSQLite() {
     _initializeDatabase();
   }
 
-  // Asynchrone Methode zur Initialisierung der Datenbank
   Future<void> _initializeDatabase() async {
     try {
-      // Pfad des Datenbankordners ermitteln (für Flutter wichtig)
       final directory = await getApplicationDocumentsDirectory();
       final dbPath = path.join(directory.path, 'todo_app.db');
-
-      // SQLite-Datenbank öffnen oder erstellen
       _db = sqlite3.open(dbPath);
-
-      // Tabelle erstellen, falls sie noch nicht existiert
       _db.execute('''
         CREATE TABLE IF NOT EXISTS tasks (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          id TEXT PRIMARY KEY,
           title TEXT,
           description TEXT,
           deadline TEXT,
@@ -35,103 +28,58 @@ class TaskStorageSQLite implements TaskStorage {
           isCompleted INTEGER
         )
       ''');
-      print('Datenbank und Tabelle erfolgreich initialisiert.');
-      _dbLock
-          .complete(); // Signalisiert, dass die Initialisierung abgeschlossen ist
+      _dbLock.complete();
     } catch (e) {
-      print('Fehler bei der Initialisierung der Datenbank: $e');
-      if (!_dbLock.isCompleted)
-        _dbLock.completeError(e); // Setzt den Fehlerfall im Completer
+      _dbLock.completeError(e);
     }
   }
 
-  // Generische Methode zur Ausführung von DB-Operationen
-  Future<T> _executeDbOperation<T>(Future<T> Function() operation) async {
-    await _dbLock.future; // Wartet, bis die Datenbank initialisiert ist
-    return operation();
-  }
-
-  // Aufgabe erstellen
   @override
   Future<void> createTask(Task task) async {
-    await _executeDbOperation(() async {
-      try {
-        // Führe das INSERT ohne ID durch, um AUTOINCREMENT zu verwenden
-        _db.execute('''
-          INSERT INTO tasks (title, description, deadline, priority, isCompleted)
-          VALUES (?, ?, ?, ?, ?)
-        ''', [
-          task.title,
-          task.description,
-          task.deadline.toIso8601String(),
-          task.priority,
-          task.isCompleted ? 1 : 0
-        ]);
-        print('Aufgabe erfolgreich hinzugefügt.');
-      } catch (e) {
-        print('Fehler beim Hinzufügen der Aufgabe: $e');
-      }
-    });
+    await _dbLock.future;
+    _db.execute('''
+      INSERT INTO tasks (id, title, description, deadline, priority, isCompleted)
+      VALUES (?, ?, ?, ?, ?, ?)
+    ''', [
+      task.id,
+      task.title,
+      task.description,
+      task.deadline.toIso8601String(),
+      task.priority,
+      task.isCompleted ? 1 : 0
+    ]);
   }
 
-  // Alle Aufgaben abrufen
   @override
   Future<List<Task>> getAllTasks() async {
-    return await _executeDbOperation(() async {
-      try {
-        final ResultSet result = _db.select('SELECT * FROM tasks');
-        return result.map((row) {
-          return Task(
-            id: row['id'] as int,
-            title: row['title'] as String,
-            description: row['description'] as String,
-            deadline: DateTime.parse(row['deadline'] as String),
-            priority: row['priority'] as int,
-            isCompleted: (row['isCompleted'] as int) == 1,
-          );
-        }).toList();
-      } catch (e) {
-        print('Fehler beim Abrufen der Aufgaben: $e');
-        return [];
-      }
-    });
+    await _dbLock.future;
+    final result = _db.select('SELECT * FROM tasks');
+    return result.map((row) {
+      return Task.fromMap(row);
+    }).toList();
   }
 
-  // Aufgabe aktualisieren
   @override
   Future<void> updateTask(Task task) async {
-    await _executeDbOperation(() async {
-      try {
-        _db.execute('''
-          UPDATE tasks
-          SET title = ?, description = ?, deadline = ?, priority = ?, isCompleted = ?
-          WHERE id = ?
-        ''', [
-          task.title,
-          task.description,
-          task.deadline.toIso8601String(),
-          task.priority,
-          task.isCompleted ? 1 : 0,
-          task.id
-        ]);
-        print('Aufgabe erfolgreich aktualisiert.');
-      } catch (e) {
-        print('Fehler beim Aktualisieren der Aufgabe: $e');
-      }
-    });
+    await _dbLock.future;
+    _db.execute('''
+      UPDATE tasks
+      SET title = ?, description = ?, deadline = ?, priority = ?, isCompleted = ?
+      WHERE id = ?
+    ''', [
+      task.title,
+      task.description,
+      task.deadline.toIso8601String(),
+      task.priority,
+      task.isCompleted ? 1 : 0,
+      task.id
+    ]);
   }
 
-  // Aufgabe löschen
   @override
-  Future<void> deleteTask(int taskId) async {
-    await _executeDbOperation(() async {
-      try {
-        _db.execute('DELETE FROM tasks WHERE id = ?', [taskId]);
-        print('Aufgabe erfolgreich gelöscht.');
-      } catch (e) {
-        print('Fehler beim Löschen der Aufgabe: $e');
-      }
-    });
+  Future<void> deleteTask(String taskId) async {
+    await _dbLock.future;
+    _db.execute('DELETE FROM tasks WHERE id = ?', [taskId]);
   }
 
   // Datenbank schließen

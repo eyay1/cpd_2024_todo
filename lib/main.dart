@@ -2,17 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'providers/task_provider.dart';
 //import 'storage/task_storage_shared_preferences.dart';
-import 'storage/task_storage_sqlite.dart';
-//import 'storage/task_storage_postgres.dart';
+//import 'storage/task_storage_sqlite.dart';
+import 'storage/task_storage_secure.dart';
 import 'widgets/task_form.dart';
 import 'widgets/task_detail.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
 
-  //TaskStoragePostgres storage = TaskStoragePostgres();
-  TaskStorageSQLite storage = TaskStorageSQLite();
+  //TaskStorageSQLite storage = TaskStorageSQLite();
   //TaskStorageSharedPreferences storage = TaskStorageSharedPreferences();
+  TaskStorageSecureStorage storage = TaskStorageSecureStorage();
 
   runApp(
     ChangeNotifierProvider(

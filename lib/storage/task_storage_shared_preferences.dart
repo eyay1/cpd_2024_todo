@@ -6,24 +6,9 @@ import '../models/tasks.dart';
 class TaskStorageSharedPreferences implements TaskStorage {
   Future<SharedPreferences> _prefs = SharedPreferences.getInstance();
 
-  static const String maxIdKey = 'max_task_id';
-
-  Future<int> _getNextId() async {
-    final SharedPreferences prefs = await _prefs;
-    int currentMaxId = prefs.getInt(maxIdKey) ?? 0;
-    int nextId = currentMaxId + 1;
-    await prefs.setInt(maxIdKey, nextId);
-    return nextId;
-  }
-
   @override
   Future<void> createTask(Task task) async {
     final SharedPreferences prefs = await _prefs;
-
-    if (task.id == null) {
-      task.id = await _getNextId();
-    }
-
     List<String> tasks = prefs.getStringList('tasks') ?? [];
     tasks.add(jsonEncode(task.toMap()));
     await prefs.setStringList('tasks', tasks);
@@ -46,7 +31,6 @@ class TaskStorageSharedPreferences implements TaskStorage {
       Task tempTask = Task.fromMap(jsonDecode(element));
       return tempTask.id == task.id;
     });
-
     if (taskIndex != -1) {
       tasks[taskIndex] = jsonEncode(task.toMap());
       await prefs.setStringList('tasks', tasks);
@@ -54,7 +38,7 @@ class TaskStorageSharedPreferences implements TaskStorage {
   }
 
   @override
-  Future<void> deleteTask(int taskId) async {
+  Future<void> deleteTask(String taskId) async {
     final SharedPreferences prefs = await _prefs;
     List<String> tasks = prefs.getStringList('tasks') ?? [];
     tasks.removeWhere((element) {
